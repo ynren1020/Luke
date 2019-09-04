@@ -5,6 +5,7 @@
 
 library(tidyverse)
 library(ggpubr)
+library(gridExtra)
 input1<-"LUAD.FPKM.CHUK.GeneID.txt"
 input2<-"LUAD.mut.txt"
 input3<-"LUSC.FPKM.CHUK.GeneID.txt"
@@ -25,7 +26,7 @@ for (i in 1:nrow(luad.fpkmL)){
 }
 
 
-chuk<-function(input1,input2){
+chuk<-function(input1,input2,a,b){
   fpkm<-read.delim(input1,header = TRUE,stringsAsFactors = FALSE,check.names = FALSE)
   mut<-read.delim(input2,header = FALSE,stringsAsFactors = FALSE,check.names = FALSE)
   fpkmL<-gather(fpkm,"patient","FPKM",-GeneID)
@@ -39,25 +40,54 @@ chuk<-function(input1,input2){
 }
 
 lusc.fpkmL<-chuk(input3,input4)
+luad.fpkmL<-chuk(input1,input2)
 
 ##add cohort##
-lusc.fpkmL$cohort<-"LUSC"
-luad.fpkmL$cohort<-"LUAD"
+lusc.fpkmL$cohort<-"LUSC" #WT 457 mutant 12
+luad.fpkmL$cohort<-"LUAD" #WT 441 mutant 65
 
+lusc.fpkmL$log2FPKM<-log2(lusc.fpkmL$FPKM)
+luad.fpkmL$log2FPKM<-log2(luad.fpkmL$FPKM)
 ##rbind for boxplot ##
-luad.lusc.join<-bind_rows(luad.fpkmL,lusc.fpkmL)
-luad.lusc.join$log2FPKM<-log2(luad.lusc.join$FPKM)
+#luad.lusc.join<-bind_rows(luad.fpkmL,lusc.fpkmL)
+#luad.lusc.join$log2FPKM<-log2(luad.lusc.join$FPKM)
 ##boxplot##
-p<-ggboxplot(luad.lusc.join,"group","log2FPKM",
+p1<-ggboxplot(luad.fpkmL,"group","log2FPKM",
              fill = "group",
              facet.by = "cohort",
              xlab = FALSE,
              ylab = "CHUK expression (log2FPKM)")
 #ggpar(p,legend = "none",yscale = "log2")
-p1<-p+stat_compare_means(method = "t.test",label.y = 4.3,label.x = 1.2)
-ggpar(p1,legend = "none")
-ggsave("LUAD.LUSC.CHUK.FPKM.boxplot.pdf",width = 5,height = 5,dpi = 300)
+p2<-p1+stat_compare_means(method = "t.test",label.x = 1.4,label.y = 4.3)+
+  scale_x_discrete(labels=c("EGFR mutant" = "EGFR mutant\n(N=65)", "WT" = "WT\n(N=441)"))+rotate_x_text(45)
+p22<-ggpar(p2,legend = "none",ylim = c(0.5,4.7),font.y = c(14,"bold"),font.tickslab = c(12,"bold"))
+
+  
+#LUSC##
+mytheme <- theme(
+  axis.title.y = element_blank(),
+  axis.text.y = element_blank(),
+  axis.ticks.y = element_blank()
+)
+
+p3<-ggboxplot(lusc.fpkmL,"group","log2FPKM",
+                fill = "group",
+                facet.by = "cohort",
+                xlab = FALSE,
+                ylab = FALSE)
+  #ggpar(p,legend = "none",yscale = "log2")
+p4<-p3+stat_compare_means(method = "t.test",label.x = 1.4,label.y = 4.3)+
+    scale_x_discrete(labels=c("EGFR mutant" = "EGFR mutant\n(N=12)", "WT" = "WT\n(N=457)"))+rotate_x_text(45)
+p44<-ggpar(p4,legend = "none",ylim=c(0.5,4.7),font.xtickslab =  c(12,"bold"))+mytheme
+
+pdf("LUAD.LUSC.CHUK.FPKM.boxplot_withsamplesize.pdf",width = 5,height = 5)
+grid.arrange(p22,p44,ncol=2)
+dev.off()
 
 
 
+##the way to save grid.arrange output##
+pdf("filename.pdf", width = 8, height = 12) # Open a new pdf file
+grid.arrange(plot1, plot2, plot3, nrow=3) # Write the grid.arrange in the file
+dev.off() # Close the file
 
