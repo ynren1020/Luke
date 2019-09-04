@@ -30,5 +30,9 @@ luad.sub.out$output<-paste0("--validateMappings -o ",luad.sub.out$sample,".trans
 luad.sub.out2<-luad.sub.out[,c(1:7,9,5,6,10)]
 write.table(luad.sub.out2,"LUAD.cram2fq.salmon.cmd.txt",sep = " ",quote = FALSE,col.names = FALSE,row.names = FALSE)
 
+##move quant.sf in each folder to salmon folder##
+#cp ./luad.sub.out$sample,".transcripts_quant"/quant.sf ./salmon/luad.sub.out$sample,_quant.sf
+luad.sub.out$move<-paste0("cp ./",luad.sub.out$sample,".transcripts_quant/quant.sf ./salmon/",luad.sub.out$sample,"_quant.sf")
+
 
 
